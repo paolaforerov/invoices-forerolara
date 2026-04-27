@@ -219,7 +219,7 @@ input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(255
           </button>
           <div class="ms-dropdown" id="ms-estado-dd">
             <div class="ms-actions"><span onclick="msSelectAll('estado')">Seleccionar todos</span><span onclick="msClearAll('estado')">Limpiar</span></div>
-            <label class="ms-option"><input type="checkbox" value="pendiente" onchange="msChange('estado')"> Pendiente pago</label>
+            <label class="ms-option"><input type="checkbox" value="pendiente pago" onchange="msChange('estado')"> Pendiente pago</label>
             <label class="ms-option"><input type="checkbox" value="parcial" onchange="msChange('estado')"> Pago parcial</label>
             <label class="ms-option"><input type="checkbox" value="pagada" onchange="msChange('estado')"> Pagada</label>
           </div>
@@ -413,7 +413,7 @@ async function sbFetch(path,opts={}){
 }
 
 const MESES=["","Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-const ESTADO_LBL={pendiente:"Pendiente pago",parcial:"Pago parcial",pagada:"Pagada",conciliada:"Conciliada"};
+const ESTADO_LBL={"pendiente pago":"Pendiente pago",parcial:"Pago parcial",pagada:"Pagada",conciliada:"Conciliada"};
 const sel={estado:new Set(),mes:new Set(),ano:new Set()};
 let all=[],filtered=[],currentId=null,fileAttached=false;
 
@@ -421,7 +421,7 @@ function fmt(n){if(n==null||n==='')return'—';return'$'+Math.round(Number(n)).t
 function fmtD(s){if(!s)return'—';const[y,m,d]=s.split('-');return+d+' '+(MESES[+m]||'').slice(0,3)+' '+y}
 function getMes(s){return s?String(+s.split('-')[1]):null}
 function getAno(s){return s?s.split('-')[0]:null}
-function isVencido(s,est){if(!s||est!=='pendiente')return false;return s<new Date().toISOString().slice(0,10)}
+function isVencido(s,est){if(!s||est!=='pendiente pago')return false;return s<new Date().toISOString().slice(0,10)}
 
 async function loadFacturas(){
   document.getElementById('tabla-body').innerHTML='<tr><td colspan="13"><div class="state-box"><div class="spinner"></div><p>Conectando con Supabase...</p></div></td></tr>';
@@ -454,11 +454,11 @@ function updateKPIs(){
 
   // KPI 2: Pendiente de pago — suma valor_a_pagar de estado 'pendiente' (siempre sobre todos)
   const pendMonto=all
-    .filter(f=>f.estado==='pendiente')
+    .filter(f=>f.estado==='pendiente pago')
     .reduce((s,f)=>s+(+f.valor_a_pagar||0),0);
 
   // KPI 3: Facturas pendientes — conteo de estado 'pendiente' (siempre sobre todos)
-  const pendNum=all.filter(f=>f.estado==='pendiente').length;
+  const pendNum=all.filter(f=>f.estado==='pendiente pago').length;
 
   // KPI 4: Pago parcial — conteo de estado 'parcial' (siempre sobre todos)
   const parcNum=all.filter(f=>f.estado==='parcial').length;
@@ -476,11 +476,11 @@ function renderTable(){
   const empty=document.getElementById('empty-state');
   if(!filtered.length){tbody.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
-  const bm={pendiente:'badge-pendiente">Pendiente pago',parcial:'badge-parcial">Pago parcial',pagada:'badge-pagada">Pagada',conciliada:'badge-conciliada">Conciliada'};
+  const bm={'pendiente pago':'badge-pendiente">Pendiente pago',parcial:'badge-parcial">Pago parcial',pagada:'badge-pagada">Pagada',conciliada:'badge-conciliada">Conciliada'};
   tbody.innerHTML=filtered.map(f=>{
-    const ed=f.estado!=='pagada'&&f.estado!=='conciliada';
+    const pagable=f.estado==='pendiente pago'||f.estado==='parcial';
     const vc=isVencido(f.fecha_vencimiento,f.estado);
-    return`<tr class="${ed?'clickable':''}" ${ed?`onclick="openPayModal('${f.id}')"`:''}>
+    return`<tr class="${pagable?'clickable':''}" ${pagable?`onclick="openPayModal('${f.id}')"`:''}>
       <td class="td-main">${f.proveedor||'—'}</td>
       <td class="td-muted">${f.nit_proveedor||'—'}</td>
       <td class="td-muted">${f.numero_factura||'—'}</td>
@@ -493,7 +493,7 @@ function renderTable(){
       <td class="td-mono">${+f.otros>0?fmt(f.otros):'—'}</td>
       <td class="td-mono" style="font-weight:600;color:var(--ink)">${fmt(f.valor_a_pagar)}</td>
       <td><span class="badge ${bm[f.estado]||'badge-pendiente">'+f.estado}</span></td>
-      <td>${ed?`<button class="icon-btn" onclick="event.stopPropagation();openEditModal('${f.id}')">✎</button>`:''}</td>
+      <td><button class="icon-btn" onclick="event.stopPropagation();openEditModal('${f.id}')">✎</button></td>
     </tr>`;
   }).join('');
 }
