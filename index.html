@@ -546,15 +546,15 @@ async function confirmPay(){
 function openEditModal(id){
   const f=all.find(x=>x.id===id);if(!f)return;currentId=id;
   document.getElementById('edit-descripcion').value=f.descripcion_resumen||'';
-  document.getElementById('edit-subtotal').value=f.subtotal||'';
-  document.getElementById('edit-iva').value=f.iva||'';
-  document.getElementById('edit-retefuente').value=f.retefuente||'';
+  document.getElementById('edit-subtotal').value=f.subtotal!=null?f.subtotal:0;
+  document.getElementById('edit-iva').value=f.iva!=null?f.iva:0;
+  document.getElementById('edit-retefuente').value=f.retefuente!=null?f.retefuente:0;
   document.getElementById('edit-monto').value=f.valor_a_pagar||'';
   document.getElementById('edit-modal').classList.add('open');
 }
 async function saveEdit(){
   try{
-    await sbFetch(`/rest/v1/facturas?id=eq.${currentId}`,{method:'PATCH',body:JSON.stringify({descripcion_resumen:document.getElementById('edit-descripcion').value,subtotal:parseFloat(document.getElementById('edit-subtotal').value)||null,iva:parseFloat(document.getElementById('edit-iva').value)||null,retefuente:parseFloat(document.getElementById('edit-retefuente').value)||null,valor_a_pagar:parseFloat(document.getElementById('edit-monto').value)||null})});
+    await sbFetch(`/rest/v1/facturas?id=eq.${currentId}`,{method:'PATCH',body:JSON.stringify({descripcion_resumen:document.getElementById('edit-descripcion').value,subtotal:parseFloat(document.getElementById('edit-subtotal').value)||0,iva:parseFloat(document.getElementById('edit-iva').value)||0,retefuente:parseFloat(document.getElementById('edit-retefuente').value)||0,valor_a_pagar:parseFloat(document.getElementById('edit-monto').value)||0})});
     closeModal('edit-modal');
     document.getElementById('success-title').textContent='Cambios guardados';
     document.getElementById('success-sub').textContent='La factura fue actualizada. Los cambios quedan registrados en el historial.';
