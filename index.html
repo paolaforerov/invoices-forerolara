@@ -493,7 +493,10 @@ function renderTable(){
       <td class="td-mono">${+f.otros>0?fmt(f.otros):'—'}</td>
       <td class="td-mono" style="font-weight:600;color:var(--ink)">${fmt(f.valor_a_pagar)}</td>
       <td><span class="badge ${bm[f.estado]||'badge-pendiente">'+f.estado}</span></td>
-      <td><button class="icon-btn" onclick="event.stopPropagation();openEditModal('${f.id}')">✎</button></td>
+      <td style="white-space:nowrap;display:flex;gap:6px;align-items:center">
+        ${pagable?`<button class="icon-btn" style="color:var(--green);border-color:var(--green);font-size:11px;font-weight:600" onclick="event.stopPropagation();openPayModal('${f.id}')">Pagar</button>`:''}
+        <button class="icon-btn" onclick="event.stopPropagation();openEditModal('${f.id}')">✎</button>
+      </td>
     </tr>`;
   }).join('');
 }
