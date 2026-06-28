@@ -33,7 +33,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);font-s
 
 /* FILTER PANEL */
 .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 20px;margin-bottom:16px;box-shadow:var(--sh)}
-.filter-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr auto;gap:12px;align-items:end}
+.filter-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr 1fr auto;gap:12px;align-items:end}
 .f-label{font-size:10.5px;font-weight:600;color:var(--ink-3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:5px;display:block}
 .chips-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border-2)}
 
@@ -76,6 +76,13 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);font-s
 
 /* TABLE */
 .table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--sh)}
+#pagination{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-top:1px solid var(--border-2);gap:8px}
+.pg-info{font-size:12px;color:var(--ink-4)}
+.pg-btns{display:flex;align-items:center;gap:4px}
+.pg-btn{min-width:32px;height:32px;padding:0 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);font-size:12px;font-weight:500;color:var(--ink-3);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.pg-btn:hover:not(:disabled){background:var(--bg);color:var(--ink)}
+.pg-btn.active{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
+.pg-btn:disabled{opacity:0.35;cursor:default}
 .table-topbar{display:flex;align-items:center;justify-content:space-between;padding:13px 20px;border-bottom:1px solid var(--border-2)}
 .table-count{font-size:12px;font-weight:500;color:var(--ink-3)}
 .tbl-scroll{overflow-x:auto}
@@ -88,7 +95,7 @@ tr.clickable:hover td{background:var(--brand-light)}
 .td-main{font-weight:500;color:var(--ink)}
 .td-muted{color:var(--ink-4);font-size:12.5px}
 .td-mono{font-family:'IBM Plex Mono',monospace;font-size:12px;text-align:right}
-.td-proveedor{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:var(--ink)}
+.td-proveedor{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:var(--ink)}
 .td-desc{max-width:150px;overflow:hidden;text-overflow:ellipsis;color:var(--ink-3);font-size:12px}
 .td-vencido{color:var(--red);font-weight:500}
 

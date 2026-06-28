@@ -147,6 +147,20 @@
           </div>
         </div>
       </div>
+      <div>
+        <label class="f-label">Antigüedad</label>
+        <div class="multiselect" id="ms-antiguedad">
+          <button type="button" class="ms-trigger" onclick="toggleMs('antiguedad')">
+            <span class="ms-trigger-text" id="ms-antiguedad-label">Todas</span>
+            <span class="ms-caret" id="ms-antiguedad-caret">▼</span>
+          </button>
+          <div class="ms-dropdown" id="ms-antiguedad-dd">
+            <label class="ms-option"><input type="checkbox" value="0-30" onchange="msChange('antiguedad')"> ≤ 30 días</label>
+            <label class="ms-option"><input type="checkbox" value="31-60" onchange="msChange('antiguedad')"> 31 – 60 días</label>
+            <label class="ms-option"><input type="checkbox" value="60+" onchange="msChange('antiguedad')"> > 60 días</label>
+          </div>
+        </div>
+      </div>
       <button class="btn btn-ghost" onclick="clearAllFilters()">Limpiar</button>
     </div>
     <div id="chips-row" class="chips-row" style="display:none"></div>
@@ -154,7 +168,7 @@
 
   <div class="note">
     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="color:var(--brand);flex-shrink:0;margin-top:1px"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3"/><path d="M8 7v4M8 5.2v.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-    <p><strong>Valor a pagar</strong> es el total final de la factura: Subtotal + IVA − Retefuente +/− Otros impuestos.</p>
+    <p><strong>Saldo pendiente</strong> refleja lo que queda por pagar de cada factura, incluyendo IVA, retenciones y otros impuestos, descontando los abonos ya realizados.</p>
   </div>
 
   <div class="table-card">
@@ -165,10 +179,10 @@
       <table>
         <thead>
           <tr>
-            <th></th><th>Proveedor</th><th>NIT</th><th># Factura</th><th>Emisión</th><th>Vencimiento</th>
-            <th>Categoría Contable</th><th style="text-align:right">Subtotal</th><th style="text-align:right">IVA</th>
+            <th></th><th>Proveedor</th><th>NIT</th><th># Factura</th><th>Emisión</th>
+            <th>Cat. Contable</th><th style="text-align:right">Subtotal</th><th style="text-align:right">IVA</th>
             <th style="text-align:right">Otros imp.</th>
-            <th style="text-align:right">Valor a pagar</th><th style="text-align:right">Saldo pendiente</th><th>Estado</th><th>Aprobación</th><th></th>
+            <th style="text-align:right">Valor a pagar</th><th style="text-align:right">Saldo pendiente</th><th style="text-align:right">Antigüedad</th><th>Estado</th><th>Aprobación</th><th></th>
           </tr>
         </thead>
         <tbody id="tabla-body">
@@ -180,6 +194,7 @@
       <p>Sin resultados para los filtros seleccionados</p>
       <button class="btn btn-ghost btn-sm" onclick="clearAllFilters()" style="margin-top:6px">Limpiar filtros</button>
     </div>
+    <div id="pagination" style="display:none"></div>
   </div>
   <p class="hint" style="margin-top:8px">✎ para corregir datos · "Aprobar" habilita el botón de pago · haz clic en "Pagar" para registrar un pago</p>
 
@@ -187,16 +202,40 @@
 
 <!-- MODAL APROBAR -->
 <div class="overlay" id="approve-modal">
-  <div class="modal" style="max-width:380px">
+  <div class="modal" style="max-width:400px">
     <div class="modal-hd"><span class="modal-title">Aprobar factura para pago</span><button class="modal-close" onclick="closeModal('approve-modal')">✕</button></div>
     <div class="info-box" style="margin-bottom:20px">
-      <div class="i-label">Proveedor</div><div class="i-val" id="approve-proveedor" style="margin-bottom:10px"></div>
-      <div class="i-label"># Factura</div><div class="i-val" id="approve-num"></div>
+      <div class="info-grid">
+        <div><div class="i-label">Proveedor</div><div class="i-val" id="approve-proveedor"></div></div>
+        <div><div class="i-label"># Factura</div><div class="i-val" id="approve-num"></div></div>
+      </div>
+      <div style="display:flex;align-items:baseline;justify-content:space-between;padding:10px 0 0">
+        <span style="font-size:11px;color:var(--ink-3);font-weight:600;text-transform:uppercase;letter-spacing:0.04em">Saldo pendiente</span>
+        <span style="font-size:18px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:var(--red)" id="approve-saldo"></span>
+      </div>
     </div>
-    <p style="font-size:13px;color:var(--ink-3);margin-bottom:20px;line-height:1.6">¿Deseas aprobar esta factura para proceder con el pago?</p>
+
+    <div class="f-group">
+      <label class="f-label-m">Tipo de pago a aprobar</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
+        <label id="approve-opt-total" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid var(--brand);border-radius:8px;cursor:pointer;background:var(--brand-pale)">
+          <input type="radio" name="approve-tipo" value="total" onchange="onApproveTipoChange()" checked style="accent-color:var(--brand)"> <span style="font-size:13px;font-weight:600;color:var(--brand-deep)">Pago total</span>
+        </label>
+        <label id="approve-opt-abono" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid var(--border-2);border-radius:8px;cursor:pointer">
+          <input type="radio" name="approve-tipo" value="abono" onchange="onApproveTipoChange()" style="accent-color:var(--brand)"> <span style="font-size:13px;font-weight:600;color:var(--ink-3)">Abono parcial</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="f-group" id="approve-monto-group" style="display:none">
+      <label class="f-label-m">Monto a abonar</label>
+      <input type="number" id="approve-monto" placeholder="0" oninput="onApproveMonto()">
+      <div class="f-hint" id="approve-monto-hint" style="color:var(--red)"></div>
+    </div>
+
     <div class="modal-actions">
-      <button class="btn btn-brand" onclick="confirmApprove()" style="width:100%;justify-content:center;padding:11px">Sí, aprobar</button>
-      <button class="btn btn-ghost" onclick="closeModal('approve-modal')" style="width:100%;justify-content:center">No, cancelar</button>
+      <button class="btn btn-brand" id="approve-confirm-btn" onclick="confirmApprove()" style="width:100%;justify-content:center;padding:11px">Aprobar</button>
+      <button class="btn btn-ghost" onclick="closeModal('approve-modal')" style="width:100%;justify-content:center">Cancelar</button>
     </div>
   </div>
 </div>
@@ -205,33 +244,45 @@
 <div class="overlay" id="pay-modal">
   <div class="modal">
     <div class="modal-hd"><span class="modal-title">Registrar pago</span><button class="modal-close" onclick="closeModal('pay-modal')">✕</button></div>
-    <div class="info-box">
-      <div class="info-grid">
-        <div><div class="i-label">Proveedor</div><div class="i-val" id="m-proveedor"></div></div>
-        <div><div class="i-label"># Factura</div><div class="i-val" id="m-num"></div></div>
-        <div><div class="i-label">Valor a Pagar (Factura)</div><div class="i-val" id="m-total-factura"></div></div>
-        <div><div class="i-label">Ya pagado</div><div class="i-val" id="m-pagado"></div></div>
+
+    <!-- Contexto compacto -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px">
+      <div><div class="i-label">Proveedor</div><div class="i-val" id="m-proveedor"></div></div>
+      <div style="text-align:right"><div class="i-label"># Factura</div><div class="i-val" id="m-num"></div></div>
+    </div>
+
+    <!-- Hero: monto a pagar -->
+    <div style="text-align:center;padding:20px 16px 16px;border:1.5px solid var(--brand);border-radius:12px;background:var(--brand-pale);margin-bottom:16px">
+      <div style="font-size:10.5px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--brand-deep);margin-bottom:10px">Monto aprobado para pagar</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:2px">
+        <span style="font-size:26px;font-weight:700;color:var(--ink);font-family:'IBM Plex Mono',monospace;line-height:1;padding-bottom:2px">$</span>
+        <input type="text" id="monto-input" placeholder="0" inputmode="numeric" oninput="onMontoInput(this)"
+          style="font-size:34px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--ink);border:none;border-bottom:2px solid var(--brand);background:transparent;width:220px;text-align:center;outline:none;padding:0 0 2px 0">
       </div>
-      <div style="display:flex;align-items:baseline;justify-content:space-between;padding:10px 0 4px">
-        <span style="font-size:11px;color:var(--ink-3);font-weight:600;text-transform:uppercase;letter-spacing:0.04em">Valor a Pagar (Después Retenciones)</span>
-        <span style="font-size:18px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:var(--blue)" id="m-total-neto"></span>
+      <div style="font-size:11px;color:var(--ink-4);margin-top:8px">Editable · puedes ajustar si coordinas un monto diferente</div>
+    </div>
+
+    <!-- Referencia secundaria -->
+    <div class="info-box" style="margin-bottom:16px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+        <div><div class="i-label">Total factura</div><div class="i-val" id="m-total-factura"></div></div>
+        <div><div class="i-label">Después retenciones</div><div class="i-val" style="color:var(--blue)" id="m-total-neto"></div></div>
+        <div><div class="i-label">Ya pagado</div><div class="i-val" id="m-pagado"></div></div>
       </div>
       <div class="info-sep"></div>
       <div class="saldo-row"><span class="saldo-lbl">Saldo pendiente</span><span class="saldo-amt" id="m-saldo"></span></div>
       <div class="prog-bg"><div class="prog-fill" id="m-progress" style="width:0%"></div></div>
       <div class="prog-lbl" id="m-prog-label"></div>
     </div>
-    <div class="f-group">
-      <label class="f-label-m">Monto a pagar en este registro</label>
-      <input type="number" id="monto-input" placeholder="0" oninput="updatePayBtn()">
-      <div class="f-hint">Puedes pagar el total o una parte</div>
-    </div>
+
+    <!-- Comprobante -->
     <div class="f-group">
       <label class="f-label-m">Comprobante de pago <span style="color:var(--red)">*</span></label>
-      <div class="upload-zone" id="upload-zone" onclick="simulateUpload()">
-        <div class="uz-icon">📎</div>
+      <input type="file" id="comprobante-input" accept=".pdf,.jpg,.jpeg,.png,image/*" style="display:none" onchange="onFileSelected(this)">
+      <div class="upload-zone" id="upload-zone" onclick="document.getElementById('comprobante-input').click()">
+        <div class="uz-icon" id="uz-icon">📎</div>
         <div class="uz-text" id="upload-text">Haz clic para adjuntar</div>
-        <div class="uz-sub">PDF, JPG o PNG · máx 10 MB</div>
+        <div class="uz-sub" id="uz-sub">PDF, JPG o PNG · máx 10 MB</div>
       </div>
     </div>
     <div class="modal-actions">
@@ -247,7 +298,9 @@
     <div class="modal-hd"><span class="modal-title">Editar factura</span><button class="modal-close" onclick="closeModal('edit-modal')">✕</button></div>
     <div class="info-note">Solo edita si hay una discrepancia con la factura original o si hay que aplicar retenciones adicionales. Los cambios quedan registrados en el historial.</div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px">
+    <div class="f-group" style="margin-top:16px"><label class="f-label-m">Descripción</label><input type="text" id="edit-descripcion" placeholder="Descripción de la factura..."></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px">
       <div class="f-group"><label class="f-label-m">Subtotal</label><input type="number" id="edit-subtotal" oninput="calcValorNeto()"></div>
       <div class="f-group"><label class="f-label-m">IVA</label><input type="number" id="edit-iva" oninput="calcValorNeto()"></div>
     </div>
@@ -337,9 +390,10 @@ async function sbFetch(path,opts={}){
 
 const MESES=["","Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const ESTADO_LBL={"pendiente pago":"Pendiente pago",parcial:"Pago parcial",pagada:"Pagada",conciliada:"Conciliada"};
-const sel={dia:new Set(),estado:new Set(),mes:new Set(),ano:new Set(),aprobacion:new Set(),proveedor:new Set()};
-let all=[],filtered=[],currentId=null,fileAttached=false;
-const approved=new Set();let approveId=null;
+const sel={dia:new Set(),estado:new Set(),mes:new Set(),ano:new Set(),aprobacion:new Set(),proveedor:new Set(),antiguedad:new Set()};
+let all=[],filtered=[],currentId=null,fileAttached=false,currentPage=1;
+const PAGE_SIZE=50;
+const approved=new Map();let approveId=null;
 
 function fmt(n){if(n==null||n==='')return'—';return'$'+Math.round(Number(n)).toLocaleString('es-CO')}
 function fmtD(s){if(!s)return'—';const[y,m,d]=s.split('-');return+d+' '+(MESES[+m]||'').slice(0,3)+' '+y}
@@ -352,7 +406,14 @@ async function loadFacturas(){
   document.getElementById('tabla-body').innerHTML='<tr><td colspan="15"><div class="state-box"><div class="spinner"></div><p>Conectando con Supabase...</p></div></td></tr>';
   document.getElementById('empty-state').style.display='none';
   try{
-    all=await sbFetch('/rest/v1/facturas?select=*&order=fecha_emision.desc');
+    const [viewData,approvalData]=await Promise.all([
+      sbFetch('/rest/v1/facturas_con_dias?select=*&order=fecha_emision.desc'),
+      sbFetch('/rest/v1/facturas?select=id,aprobado_para_pago,tipo_aprobacion,monto_aprobado')
+    ]);
+    const apMap=new Map(approvalData.map(f=>[f.id,f]));
+    all=viewData.map(f=>({...f,...(apMap.get(f.id)||{})}));
+    approved.clear();
+    all.forEach(f=>{if(f.aprobado_para_pago)approved.set(f.id,{tipo:f.tipo_aprobacion||'total',monto:f.monto_aprobado});});
     buildProveedorDropdown();
     buildDiaDropdown();
     applyFilters();
@@ -373,9 +434,10 @@ function applyFilters(){
       if(sel.aprobacion.has('sin_aprobar')&&!sel.aprobacion.has('aprobada')&&isApr)return false;
     }
     if(sel.proveedor.size&&!sel.proveedor.has(f.proveedor||''))return false;
+    if(sel.antiguedad.size){const d=f.dias_sin_pagar!=null?+f.dias_sin_pagar:null;if(d===null)return false;const cat=d<=30?'0-30':d<=60?'31-60':'60+';if(!sel.antiguedad.has(cat))return false;}
     return true;
   });
-  renderTable();renderChips();updateKPIs();
+  currentPage=1;renderTable();renderChips();updateKPIs();
 }
 
 function updateKPIs(){
@@ -386,10 +448,14 @@ function updateKPIs(){
     .filter(f=>f.estado==='pagada'&&getMes(f.fecha_emision)===m&&getAno(f.fecha_emision)===y)
     .reduce((s,f)=>s+(+f.valor_a_pagar||0),0);
 
-  // KPI 2: Pendiente de pago — suma valor_a_pagar de estado 'pendiente' (siempre sobre todos)
+  // KPI 2: Pendiente de pago — suma de saldo pendiente de todas las facturas no pagadas
   const pendMonto=all
-    .filter(f=>f.estado==='pendiente pago')
-    .reduce((s,f)=>s+(+f.valor_a_pagar||0),0);
+    .filter(f=>f.estado!=='pagada')
+    .reduce((s,f)=>{
+      const base=f.valor_neto!=null?+f.valor_neto:+f.valor_a_pagar||0;
+      const saldo=Math.max(0,base-(+f.monto_pagado||0));
+      return s+saldo;
+    },0);
 
   // KPI 3: Facturas pendientes — conteo de estado 'pendiente' (siempre sobre todos)
   const pendNum=all.filter(f=>f.estado==='pendiente pago').length;
@@ -405,15 +471,31 @@ function updateKPIs(){
   document.getElementById('table-count').textContent=n+' factura'+(n!==1?'s':'');
 }
 
+function goToPage(p){currentPage=p;renderTable();document.getElementById('tabla-body').closest('.tbl-scroll').scrollTop=0;}
+function renderPagination(){
+  const total=filtered.length,pages=Math.ceil(total/PAGE_SIZE),pg=document.getElementById('pagination');
+  if(pages<=1){pg.style.display='none';return;}
+  pg.style.display='flex';
+  const start=(currentPage-1)*PAGE_SIZE+1,end=Math.min(currentPage*PAGE_SIZE,total);
+  let btns='';
+  btns+=`<button class="pg-btn" onclick="goToPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹</button>`;
+  for(let i=1;i<=pages;i++){
+    if(pages>7&&i>2&&i<pages-1&&Math.abs(i-currentPage)>1){if(i===3||i===pages-2)btns+='<span style="padding:0 4px;color:var(--ink-4)">…</span>';continue;}
+    btns+=`<button class="pg-btn${i===currentPage?' active':''}" onclick="goToPage(${i})">${i}</button>`;
+  }
+  btns+=`<button class="pg-btn" onclick="goToPage(${currentPage+1})" ${currentPage===pages?'disabled':''}>›</button>`;
+  pg.innerHTML=`<span class="pg-info">${start}–${end} de ${total} facturas</span><div class="pg-btns">${btns}</div>`;
+}
 function renderTable(){
   const tbody=document.getElementById('tabla-body');
   const empty=document.getElementById('empty-state');
-  if(!filtered.length){tbody.innerHTML='';empty.style.display='block';return;}
+  if(!filtered.length){tbody.innerHTML='';empty.style.display='block';document.getElementById('pagination').style.display='none';return;}
   empty.style.display='none';
+  const page=filtered.slice((currentPage-1)*PAGE_SIZE,currentPage*PAGE_SIZE);
   const bm={'pendiente pago':'badge-pendiente">Pendiente pago',parcial:'badge-parcial">Pago parcial',pagada:'badge-pagada">Pagada',conciliada:'badge-conciliada">Conciliada'};
-  tbody.innerHTML=filtered.map(f=>{
+  tbody.innerHTML=page.map(f=>{
     const pagable=f.estado==='pendiente pago'||f.estado==='parcial';
-    const vc=isVencido(f.fecha_vencimiento,f.estado);
+    const dias=f.dias_sin_pagar!=null?+f.dias_sin_pagar:null;
     const isApproved=approved.has(f.id);
     return `<tr>
       <td style="white-space:nowrap;padding:11px 8px">
@@ -423,34 +505,35 @@ function renderTable(){
       <td class="td-muted">${f.nit_proveedor||'—'}</td>
       <td class="td-muted">${f.numero_factura||'—'}</td>
       <td class="td-muted">${fmtD(f.fecha_emision)}</td>
-      <td class="${vc?'td-vencido':'td-muted'}">${fmtD(f.fecha_vencimiento)}</td>
-      <td class="td-muted" style="font-size:12px;max-width:110px;overflow:hidden;text-overflow:ellipsis" title="${f.categoria_contable||''}">${f.categoria_contable||'—'}</td>
+      <td class="td-muted" style="font-size:12px;max-width:55px;overflow:hidden;text-overflow:ellipsis" title="${f.categoria_contable||''}">${f.categoria_contable||'—'}</td>
       <td class="td-mono">${fmt(f.subtotal)}</td>
       <td class="td-mono">${fmt(f.iva)}</td>
       <td class="td-mono">${+f.otros>0?fmt(f.otros):'—'}</td>
       <td class="td-mono" style="font-weight:600;color:var(--ink)">${fmt(f.valor_a_pagar)}</td>
       ${(()=>{if(f.estado==='pagada')return`<td class="td-mono" style="color:var(--green);font-weight:600">$0</td>`;const neto=f.valor_neto!=null?+f.valor_neto:+f.valor_a_pagar||0;const saldo=Math.max(0,neto-(+f.monto_pagado||0));return saldo>0?`<td class="td-mono" style="font-weight:600;color:var(--red)">${fmt(saldo)}</td>`:`<td class="td-mono" style="color:var(--green);font-weight:600">$0</td>`;})()}
+      <td class="td-mono" style="text-align:right;font-weight:600;color:${dias!=null&&dias>30?'var(--red)':dias!=null&&dias>15?'var(--amber, #d97706)':'var(--ink)'}">${dias!=null?dias+'d':'—'}</td>
       <td><span class="badge ${bm[f.estado]||'badge-pendiente">'+f.estado}</span></td>
       <td style="white-space:nowrap">
         ${pagable&&!isApproved?`<button class="icon-btn" style="color:var(--brand-deep);border-color:var(--brand-mid);font-size:11px;font-weight:600" onclick="event.stopPropagation();openApproveModal('${f.id}')">Aprobar</button>`:''}
-        ${isApproved?`<span style="display:inline-flex;align-items:center;gap:6px"><span style="font-size:11px;color:var(--green);font-weight:600">✓ Aprobada</span><button class="icon-btn" title="Revertir aprobación" style="font-size:10px;padding:3px 7px;color:var(--ink-4)" onclick="event.stopPropagation();revokeApproval('${f.id}')">✕</button></span>`:''}
+        ${isApproved&&pagable?`<span style="display:inline-flex;align-items:center;gap:6px"><span style="font-size:11px;color:var(--green);font-weight:600">✓ Aprobada</span><button class="icon-btn" title="Revertir aprobación" style="font-size:10px;padding:3px 7px;color:var(--ink-4)" onclick="event.stopPropagation();revokeApproval('${f.id}')">✕</button></span>`:''}
       </td>
       <td style="white-space:nowrap">
         ${isApproved&&pagable?`<button class="icon-btn" style="color:var(--blue);border-color:var(--blue);font-size:11px;font-weight:600" onclick="event.stopPropagation();openPayModal('${f.id}')">Pagar</button>`:''}
       </td>
     </tr>`;
   }).join('');
+  renderPagination();
 }
 
 function toggleMs(k){const dd=document.getElementById('ms-'+k+'-dd');const open=dd.classList.contains('open');closeAllMs();if(!open){dd.classList.add('open');document.getElementById('ms-'+k+'-caret').classList.add('open');document.querySelector('#ms-'+k+' .ms-trigger').classList.add('open');}}
-function closeAllMs(){['dia','estado','mes','ano','aprobacion','proveedor'].forEach(k=>{document.getElementById('ms-'+k+'-dd').classList.remove('open');document.getElementById('ms-'+k+'-caret').classList.remove('open');document.querySelector('#ms-'+k+' .ms-trigger').classList.remove('open');});}
+function closeAllMs(){['dia','estado','mes','ano','aprobacion','proveedor','antiguedad'].forEach(k=>{document.getElementById('ms-'+k+'-dd').classList.remove('open');document.getElementById('ms-'+k+'-caret').classList.remove('open');document.querySelector('#ms-'+k+' .ms-trigger').classList.remove('open');});}
 document.addEventListener('click',e=>{if(!e.target.closest('.multiselect'))closeAllMs();});
 function msChange(k){sel[k].clear();document.querySelectorAll('#ms-'+k+'-dd input[type=checkbox]').forEach(cb=>{if(cb.checked)sel[k].add(cb.value);});updateMsLbl(k);applyFilters();}
 function msSelectAll(k){document.querySelectorAll('#ms-'+k+'-dd input[type=checkbox]').forEach(cb=>{cb.checked=true;sel[k].add(cb.value);});updateMsLbl(k);applyFilters();}
 function msClearAll(k){document.querySelectorAll('#ms-'+k+'-dd input[type=checkbox]').forEach(cb=>{cb.checked=false;});sel[k].clear();updateMsLbl(k);applyFilters();}
-function updateMsLbl(k){const el=document.getElementById('ms-'+k+'-label');const def={dia:'Todos los días',estado:'Todos los estados',mes:'Todos los meses',ano:'Todos los años',aprobacion:'Todas',proveedor:'Todos los proveedores'};const c=sel[k].size;if(!c){el.textContent=def[k];el.classList.remove('has-sel');return;}if(k==='dia')el.textContent=c===1?'Día '+[...sel[k]][0]:c+' días';else if(k==='estado')el.textContent=c===1?ESTADO_LBL[[...sel[k]][0]]:c+' estados';else if(k==='mes')el.textContent=c===1?MESES[+[...sel[k]][0]]:c+' meses';else if(k==='aprobacion')el.textContent=c===1?([...sel[k]][0]==='aprobada'?'Aprobadas':'Sin aprobar'):'Todas';else if(k==='proveedor')el.textContent=c===1?[...sel[k]][0]:c+' proveedores';else el.textContent=c===1?[...sel[k]][0]:c+' años';el.classList.add('has-sel');}
-function clearAllFilters(){['dia','estado','mes','ano','aprobacion','proveedor'].forEach(k=>msClearAll(k));}
-function renderChips(){const row=document.getElementById('chips-row');const chips=[];[...sel.dia].sort((a,b)=>+a-+b).forEach(v=>chips.push(`<span class="chip">Día ${v}<button onclick="removeChip('dia','${v}')">✕</button></span>`));sel.estado.forEach(v=>chips.push(`<span class="chip">${ESTADO_LBL[v]}<button onclick="removeChip('estado','${v}')">✕</button></span>`));[...sel.mes].sort((a,b)=>+a-+b).forEach(v=>chips.push(`<span class="chip">${MESES[+v]}<button onclick="removeChip('mes','${v}')">✕</button></span>`));[...sel.ano].sort().forEach(v=>chips.push(`<span class="chip">${v}<button onclick="removeChip('ano','${v}')">✕</button></span>`));sel.aprobacion.forEach(v=>chips.push(`<span class="chip">${v==='aprobada'?'Aprobada':'Sin aprobar'}<button onclick="removeChip('aprobacion','${v}')">✕</button></span>`));sel.proveedor.forEach(v=>chips.push(`<span class="chip">${v}<button onclick="removeChip('proveedor',${JSON.stringify(v)})">✕</button></span>`));row.style.display=chips.length?'flex':'none';row.innerHTML=chips.join('');}
+function updateMsLbl(k){const el=document.getElementById('ms-'+k+'-label');const def={dia:'Todos los días',estado:'Todos los estados',mes:'Todos los meses',ano:'Todos los años',aprobacion:'Todas',proveedor:'Todos los proveedores',antiguedad:'Todas'};const c=sel[k].size;if(!c){el.textContent=def[k];el.classList.remove('has-sel');return;}if(k==='dia')el.textContent=c===1?'Día '+[...sel[k]][0]:c+' días';else if(k==='estado')el.textContent=c===1?ESTADO_LBL[[...sel[k]][0]]:c+' estados';else if(k==='mes')el.textContent=c===1?MESES[+[...sel[k]][0]]:c+' meses';else if(k==='aprobacion')el.textContent=c===1?([...sel[k]][0]==='aprobada'?'Aprobadas':'Sin aprobar'):'Todas';else if(k==='proveedor')el.textContent=c===1?[...sel[k]][0]:c+' proveedores';else if(k==='antiguedad'){const lbl={'0-30':'≤ 30 días','31-60':'31–60 días','60+':'> 60 días'};el.textContent=c===1?lbl[[...sel[k]][0]]:c+' rangos';}else el.textContent=c===1?[...sel[k]][0]:c+' años';el.classList.add('has-sel');}
+function clearAllFilters(){['dia','estado','mes','ano','aprobacion','proveedor','antiguedad'].forEach(k=>msClearAll(k));}
+function renderChips(){const row=document.getElementById('chips-row');const chips=[];[...sel.dia].sort((a,b)=>+a-+b).forEach(v=>chips.push(`<span class="chip">Día ${v}<button onclick="removeChip('dia','${v}')">✕</button></span>`));sel.estado.forEach(v=>chips.push(`<span class="chip">${ESTADO_LBL[v]}<button onclick="removeChip('estado','${v}')">✕</button></span>`));[...sel.mes].sort((a,b)=>+a-+b).forEach(v=>chips.push(`<span class="chip">${MESES[+v]}<button onclick="removeChip('mes','${v}')">✕</button></span>`));[...sel.ano].sort().forEach(v=>chips.push(`<span class="chip">${v}<button onclick="removeChip('ano','${v}')">✕</button></span>`));sel.aprobacion.forEach(v=>chips.push(`<span class="chip">${v==='aprobada'?'Aprobada':'Sin aprobar'}<button onclick="removeChip('aprobacion','${v}')">✕</button></span>`));sel.proveedor.forEach(v=>chips.push(`<span class="chip">${v}<button onclick="removeChip('proveedor',${JSON.stringify(v)})">✕</button></span>`));{const lbl={'0-30':'≤ 30 días','31-60':'31–60 días','60+':'> 60 días'};sel.antiguedad.forEach(v=>chips.push(`<span class="chip">${lbl[v]}<button onclick="removeChip('antiguedad','${v}')">✕</button></span>`));}row.style.display=chips.length?'flex':'none';row.innerHTML=chips.join('');}
 function buildDiaDropdown(){const dd=document.getElementById('ms-dia-dd');const dias=[...new Set(all.map(f=>getDia(f.fecha_emision)).filter(Boolean))].sort((a,b)=>+a-+b);const ac=document.createElement('div');ac.className='ms-actions';ac.innerHTML='<span onclick="msSelectAll(\'dia\')">Seleccionar todos</span><span onclick="msClearAll(\'dia\')">Limpiar</span>';dd.innerHTML='';dd.appendChild(ac);dias.forEach(d=>{const lbl=document.createElement('label');lbl.className='ms-option';const cb=document.createElement('input');cb.type='checkbox';cb.value=d;cb.onchange=()=>msChange('dia');if(sel.dia.has(d))cb.checked=true;lbl.appendChild(cb);lbl.appendChild(document.createTextNode(' '+d));dd.appendChild(lbl);});}
 function buildProveedorDropdown(){const dd=document.getElementById('ms-proveedor-dd');const proveedores=[...new Set(all.map(f=>f.proveedor||'').filter(Boolean))].sort();const actions=dd.querySelector('.ms-actions');dd.innerHTML='';const ac=document.createElement('div');ac.className='ms-actions';ac.innerHTML='<span onclick="msSelectAll(\'proveedor\')">Seleccionar todos</span><span onclick="msClearAll(\'proveedor\')">Limpiar</span>';dd.appendChild(ac);proveedores.forEach(p=>{const lbl=document.createElement('label');lbl.className='ms-option';const cb=document.createElement('input');cb.type='checkbox';cb.value=p;cb.onchange=()=>msChange('proveedor');if(sel.proveedor.has(p))cb.checked=true;lbl.appendChild(cb);lbl.appendChild(document.createTextNode(' '+p));dd.appendChild(lbl);});}
 function removeChip(k,v){sel[k].delete(v);const cb=document.querySelector(`#ms-${k}-dd input[value="${CSS.escape(v)}"]`);if(cb)cb.checked=false;updateMsLbl(k);applyFilters();}
@@ -458,19 +541,53 @@ function removeChip(k,v){sel[k].delete(v);const cb=document.querySelector(`#ms-$
 function openApproveModal(id){
   const f=all.find(x=>x.id===id);if(!f)return;
   approveId=id;
+  const saldo=Math.max(0,(f.valor_neto!=null?+f.valor_neto:+f.valor_a_pagar||0)-(+f.monto_pagado||0));
   document.getElementById('approve-proveedor').textContent=f.proveedor||'—';
   document.getElementById('approve-num').textContent=f.numero_factura||'—';
+  document.getElementById('approve-saldo').textContent=fmt(saldo);
+  document.querySelector('input[name="approve-tipo"][value="total"]').checked=true;
+  document.getElementById('approve-monto-group').style.display='none';
+  document.getElementById('approve-monto').value='';
+  document.getElementById('approve-monto-hint').textContent='';
+  document.getElementById('approve-confirm-btn').disabled=false;
+  document.getElementById('approve-opt-total').style.cssText='display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid var(--brand);border-radius:8px;cursor:pointer;background:var(--brand-pale)';
+  document.getElementById('approve-opt-abono').style.cssText='display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid var(--border-2);border-radius:8px;cursor:pointer';
   document.getElementById('approve-modal').classList.add('open');
 }
-function confirmApprove(){
-  if(!approveId)return;
-  approved.add(approveId);
-  closeModal('approve-modal');
-  applyFilters();
+function onApproveTipoChange(){
+  const tipo=document.querySelector('input[name="approve-tipo"]:checked').value;
+  const isAbono=tipo==='abono';
+  document.getElementById('approve-monto-group').style.display=isAbono?'block':'none';
+  document.getElementById('approve-monto-hint').textContent='';
+  document.getElementById('approve-confirm-btn').disabled=isAbono;
+  document.getElementById('approve-opt-total').style.cssText=`display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid ${!isAbono?'var(--brand)':'var(--border-2)'};border-radius:8px;cursor:pointer;${!isAbono?'background:var(--brand-pale)':''}`;
+  document.getElementById('approve-opt-abono').style.cssText=`display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid ${isAbono?'var(--brand)':'var(--border-2)'};border-radius:8px;cursor:pointer;${isAbono?'background:var(--brand-pale)':''}`;
 }
-function revokeApproval(id){
-  approved.delete(id);
-  applyFilters();
+function onApproveMonto(){
+  const v=parseFloat(document.getElementById('approve-monto').value)||0;
+  const hint=document.getElementById('approve-monto-hint');
+  if(v<=0){hint.textContent='Ingresa un monto mayor a 0.';document.getElementById('approve-confirm-btn').disabled=true;}
+  else{hint.textContent='';document.getElementById('approve-confirm-btn').disabled=false;}
+}
+async function confirmApprove(){
+  if(!approveId)return;
+  const tipo=document.querySelector('input[name="approve-tipo"]:checked').value;
+  const monto=tipo==='total'?null:parseFloat(document.getElementById('approve-monto').value)||0;
+  try{
+    await sbFetch(`/rest/v1/facturas?id=eq.${approveId}`,{method:'PATCH',body:JSON.stringify({aprobado_para_pago:true,tipo_aprobacion:tipo,monto_aprobado:monto})});
+    approved.set(approveId,{tipo,monto});
+    const f=all.find(x=>x.id===approveId);if(f){f.aprobado_para_pago=true;f.tipo_aprobacion=tipo;f.monto_aprobado=monto;}
+    closeModal('approve-modal');
+    applyFilters();
+  }catch(e){showToast('Error al aprobar: '+e.message);}
+}
+async function revokeApproval(id){
+  try{
+    await sbFetch(`/rest/v1/facturas?id=eq.${id}`,{method:'PATCH',body:JSON.stringify({aprobado_para_pago:false,tipo_aprobacion:null,monto_aprobado:null})});
+    approved.delete(id);
+    const f=all.find(x=>x.id===id);if(f){f.aprobado_para_pago=false;f.tipo_aprobacion=null;f.monto_aprobado=null;}
+    applyFilters();
+  }catch(e){showToast('Error al revocar: '+e.message);}
 }
 
 function openPayModal(id){
@@ -487,24 +604,67 @@ function openPayModal(id){
   document.getElementById('m-saldo').textContent=fmt(saldo);
   document.getElementById('m-progress').style.width=pct+'%';
   document.getElementById('m-prog-label').textContent=pct+'% pagado';
-  document.getElementById('monto-input').value=saldo;
+  const aprobacion=approved.get(id);
+  const montoInicial=aprobacion&&aprobacion.tipo==='abono'&&aprobacion.monto?aprobacion.monto:saldo;
+  document.getElementById('monto-input').value=montoInicial>0?montoInicial.toLocaleString('es-CO'):'';
   document.getElementById('upload-zone').className='upload-zone';
+  document.getElementById('uz-icon').textContent='📎';
   document.getElementById('upload-text').textContent='Haz clic para adjuntar';
+  document.getElementById('uz-sub').textContent='PDF, JPG o PNG · máx 10 MB';
+  document.getElementById('comprobante-input').value='';
   document.getElementById('confirm-btn').disabled=true;
   document.getElementById('pay-modal').classList.add('open');
 }
-function simulateUpload(){fileAttached=true;document.getElementById('upload-zone').className='upload-zone has-file';document.getElementById('upload-text').textContent='comprobante_pago.pdf adjunto ✓';updatePayBtn();}
-function updatePayBtn(){const v=parseFloat(document.getElementById('monto-input').value)||0;document.getElementById('confirm-btn').disabled=!(fileAttached&&v>0);}
+function onFileSelected(input){
+  const file=input.files[0];
+  if(!file)return;
+  const mb=(file.size/1024/1024).toFixed(1);
+  if(file.size>10*1024*1024){showToast('El archivo supera 10 MB. Elige otro.');input.value='';return;}
+  fileAttached=true;
+  document.getElementById('upload-zone').className='upload-zone has-file';
+  document.getElementById('uz-icon').textContent='✅';
+  document.getElementById('upload-text').textContent=file.name;
+  document.getElementById('uz-sub').textContent=mb+' MB · Haz clic para cambiar';
+  updatePayBtn();
+}
+function getMontoValue(){return parseFloat(document.getElementById('monto-input').value.replace(/\./g,'').replace(',','.'))||0;}
+function onMontoInput(el){const pos=el.selectionStart,raw=el.value.replace(/[^\d]/g,'');const num=parseInt(raw)||0;const fmt=num>0?num.toLocaleString('es-CO'):'';const diff=fmt.length-el.value.length;el.value=fmt;el.selectionStart=el.selectionEnd=Math.max(0,pos+diff);updatePayBtn();}
+function updatePayBtn(){const v=getMontoValue();document.getElementById('confirm-btn').disabled=!(fileAttached&&v>0);}
+function fileToBase64(file){
+  return new Promise((resolve,reject)=>{
+    const r=new FileReader();
+    r.onload=()=>resolve(r.result.split(',')[1]);
+    r.onerror=reject;
+    r.readAsDataURL(file);
+  });
+}
+
 async function confirmPay(){
   const f=all.find(x=>x.id===currentId);
-  const monto=parseFloat(document.getElementById('monto-input').value)||0;
+  const monto=getMontoValue();
   const totalNeto=f.valor_neto!=null?+f.valor_neto:+f.valor_a_pagar||0;
   const prev=+f.monto_pagado||0,nuevo=prev+monto;
   const ok=nuevo>=totalNeto;
   const estado=ok?'pagada':'parcial';
   const tipo=ok?'pago total':'abono';
+  const file=document.getElementById('comprobante-input').files[0];
   try{
+    const base64=await fileToBase64(file);
     await Promise.all([
+      fetch('https://n8n.pfvlatintech.com/webhook/pagos',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          numero_factura:f.numero_factura||'',
+          proveedor:f.proveedor||'',
+          monto,
+          tipo,
+          fecha:new Date().toISOString(),
+          archivo_nombre:file.name,
+          archivo_tipo:file.type,
+          archivo_base64:base64
+        })
+      }),
       sbFetch(`/rest/v1/facturas?id=eq.${currentId}`,{
         method:'PATCH',
         body:JSON.stringify({monto_pagado:nuevo,estado})
@@ -518,7 +678,8 @@ async function confirmPay(){
           proveedor:f.proveedor||'',
           monto,
           tipo,
-          fecha:new Date().toISOString()
+          fecha:new Date().toISOString(),
+          email_enviado:false
         })
       })
     ]);
@@ -531,6 +692,7 @@ async function confirmPay(){
 
 function openEditModal(id){
   const f=all.find(x=>x.id===id);if(!f)return;currentId=id;
+  document.getElementById('edit-descripcion').value=f.descripcion_resumen||'';
   document.getElementById('edit-subtotal').value=f.subtotal!=null?f.subtotal:0;
   document.getElementById('edit-iva').value=f.iva!=null?f.iva:0;
   document.getElementById('edit-valor-factura').value=f.valor_a_pagar!=null?f.valor_a_pagar:0;
@@ -562,6 +724,7 @@ async function saveEdit(){
   if(neto<0){showToast('El valor neto no puede ser negativo.');return;}
   try{
     await sbFetch(`/rest/v1/facturas?id=eq.${currentId}`,{method:'PATCH',body:JSON.stringify({
+      descripcion_resumen:document.getElementById('edit-descripcion').value,
       subtotal:parseFloat(document.getElementById('edit-subtotal').value)||0,
       iva:parseFloat(document.getElementById('edit-iva').value)||0,
       valor_a_pagar:parseFloat(document.getElementById('edit-valor-factura').value)||0,
