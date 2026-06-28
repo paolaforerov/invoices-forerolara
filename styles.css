@@ -34,6 +34,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);font-s
 /* FILTER PANEL */
 .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 20px;margin-bottom:16px;box-shadow:var(--sh)}
 .filter-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:12px;align-items:end}
+.filter-grid>div{min-width:0}
 .f-label{font-size:10.5px;font-weight:600;color:var(--ink-3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:5px;display:block}
 .chips-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border-2)}
 
