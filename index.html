@@ -56,56 +56,12 @@
   <div class="panel">
     <div class="filter-grid">
       <div>
-        <label class="f-label">Día de emisión</label>
-        <div class="multiselect" id="ms-dia">
-          <button type="button" class="ms-trigger" onclick="toggleMs('dia')">
-            <span class="ms-trigger-text" id="ms-dia-label">Todos los días</span>
-            <span class="ms-caret" id="ms-dia-caret">▼</span>
-          </button>
-          <div class="ms-dropdown" id="ms-dia-dd">
-            <div class="ms-actions"><span onclick="msSelectAll('dia')">Seleccionar todos</span><span onclick="msClearAll('dia')">Limpiar</span></div>
-          </div>
-        </div>
+        <label class="f-label">Fecha desde</label>
+        <input type="date" id="filter-fecha-desde" class="date-input" onchange="applyFilters()">
       </div>
       <div>
-        <label class="f-label">Mes de emisión</label>
-        <div class="multiselect" id="ms-mes">
-          <button type="button" class="ms-trigger" onclick="toggleMs('mes')">
-            <span class="ms-trigger-text" id="ms-mes-label">Todos los meses</span>
-            <span class="ms-caret" id="ms-mes-caret">▼</span>
-          </button>
-          <div class="ms-dropdown" id="ms-mes-dd">
-            <div class="ms-actions"><span onclick="msSelectAll('mes')">Seleccionar todos</span><span onclick="msClearAll('mes')">Limpiar</span></div>
-            <label class="ms-option"><input type="checkbox" value="1" onchange="msChange('mes')"> Enero</label>
-            <label class="ms-option"><input type="checkbox" value="2" onchange="msChange('mes')"> Febrero</label>
-            <label class="ms-option"><input type="checkbox" value="3" onchange="msChange('mes')"> Marzo</label>
-            <label class="ms-option"><input type="checkbox" value="4" onchange="msChange('mes')"> Abril</label>
-            <label class="ms-option"><input type="checkbox" value="5" onchange="msChange('mes')"> Mayo</label>
-            <label class="ms-option"><input type="checkbox" value="6" onchange="msChange('mes')"> Junio</label>
-            <label class="ms-option"><input type="checkbox" value="7" onchange="msChange('mes')"> Julio</label>
-            <label class="ms-option"><input type="checkbox" value="8" onchange="msChange('mes')"> Agosto</label>
-            <label class="ms-option"><input type="checkbox" value="9" onchange="msChange('mes')"> Septiembre</label>
-            <label class="ms-option"><input type="checkbox" value="10" onchange="msChange('mes')"> Octubre</label>
-            <label class="ms-option"><input type="checkbox" value="11" onchange="msChange('mes')"> Noviembre</label>
-            <label class="ms-option"><input type="checkbox" value="12" onchange="msChange('mes')"> Diciembre</label>
-          </div>
-        </div>
-      </div>
-      <div>
-        <label class="f-label">Año de emisión</label>
-        <div class="multiselect" id="ms-ano">
-          <button type="button" class="ms-trigger" onclick="toggleMs('ano')">
-            <span class="ms-trigger-text" id="ms-ano-label">Todos los años</span>
-            <span class="ms-caret" id="ms-ano-caret">▼</span>
-          </button>
-          <div class="ms-dropdown" id="ms-ano-dd">
-            <div class="ms-actions"><span onclick="msSelectAll('ano')">Seleccionar todos</span><span onclick="msClearAll('ano')">Limpiar</span></div>
-            <label class="ms-option"><input type="checkbox" value="2023" onchange="msChange('ano')"> 2023</label>
-            <label class="ms-option"><input type="checkbox" value="2024" onchange="msChange('ano')"> 2024</label>
-            <label class="ms-option"><input type="checkbox" value="2025" onchange="msChange('ano')"> 2025</label>
-            <label class="ms-option"><input type="checkbox" value="2026" onchange="msChange('ano')"> 2026</label>
-          </div>
-        </div>
+        <label class="f-label">Fecha hasta</label>
+        <input type="date" id="filter-fecha-hasta" class="date-input" onchange="applyFilters()">
       </div>
       <div>
         <label class="f-label">Estado</label>
@@ -392,7 +348,7 @@ async function sbFetch(path,opts={}){
 
 const MESES=["","Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const ESTADO_LBL={"pendiente pago":"Pendiente pago",parcial:"Pago parcial",pagada:"Pagada",conciliada:"Conciliada"};
-const sel={dia:new Set(),estado:new Set(),mes:new Set(),ano:new Set(),aprobacion:new Set(),proveedor:new Set(),antiguedad:new Set()};
+const sel={estado:new Set(),aprobacion:new Set(),proveedor:new Set(),antiguedad:new Set()};
 let all=[],filtered=[],currentId=null,fileAttached=false,currentPage=1;
 const PAGE_SIZE=50;
 const approved=new Map();let approveId=null;
@@ -417,7 +373,6 @@ async function loadFacturas(){
     approved.clear();
     all.forEach(f=>{if(f.aprobado_para_pago)approved.set(f.id,{tipo:f.tipo_aprobacion||'total',monto:f.monto_aprobado});});
     buildProveedorDropdown();
-    buildDiaDropdown();
     applyFilters();
   }catch(e){
     document.getElementById('tabla-body').innerHTML=`<tr><td colspan="13"><div class="state-box" style="color:var(--red)"><p>Error al cargar: ${e.message}</p></div></td></tr>`;
@@ -426,10 +381,11 @@ async function loadFacturas(){
 
 function applyFilters(){
   filtered=all.filter(f=>{
-    if(sel.dia.size&&!sel.dia.has(getDia(f.fecha_emision)))return false;
+    const fd=document.getElementById('filter-fecha-desde').value;
+    const fh=document.getElementById('filter-fecha-hasta').value;
+    if(fd&&f.fecha_emision&&f.fecha_emision<fd)return false;
+    if(fh&&f.fecha_emision&&f.fecha_emision>fh)return false;
     if(sel.estado.size&&!sel.estado.has(f.estado))return false;
-    if(sel.mes.size&&!sel.mes.has(getMes(f.fecha_emision)))return false;
-    if(sel.ano.size&&!sel.ano.has(getAno(f.fecha_emision)))return false;
     if(sel.aprobacion.size){
       const isApr=approved.has(f.id);
       if(sel.aprobacion.has('aprobada')&&!sel.aprobacion.has('sin_aprobar')&&!isApr)return false;
@@ -528,14 +484,24 @@ function renderTable(){
 }
 
 function toggleMs(k){const dd=document.getElementById('ms-'+k+'-dd');const open=dd.classList.contains('open');closeAllMs();if(!open){dd.classList.add('open');document.getElementById('ms-'+k+'-caret').classList.add('open');document.querySelector('#ms-'+k+' .ms-trigger').classList.add('open');}}
-function closeAllMs(){['dia','estado','mes','ano','aprobacion','proveedor','antiguedad'].forEach(k=>{document.getElementById('ms-'+k+'-dd').classList.remove('open');document.getElementById('ms-'+k+'-caret').classList.remove('open');document.querySelector('#ms-'+k+' .ms-trigger').classList.remove('open');});}
+function closeAllMs(){['estado','aprobacion','proveedor','antiguedad'].forEach(k=>{document.getElementById('ms-'+k+'-dd').classList.remove('open');document.getElementById('ms-'+k+'-caret').classList.remove('open');document.querySelector('#ms-'+k+' .ms-trigger').classList.remove('open');});}
 document.addEventListener('click',e=>{if(!e.target.closest('.multiselect'))closeAllMs();});
 function msChange(k){sel[k].clear();document.querySelectorAll('#ms-'+k+'-dd input[type=checkbox]').forEach(cb=>{if(cb.checked)sel[k].add(cb.value);});updateMsLbl(k);applyFilters();}
 function msSelectAll(k){document.querySelectorAll('#ms-'+k+'-dd input[type=checkbox]').forEach(cb=>{cb.checked=true;sel[k].add(cb.value);});updateMsLbl(k);applyFilters();}
 function msClearAll(k){document.querySelectorAll('#ms-'+k+'-dd input[type=checkbox]').forEach(cb=>{cb.checked=false;});sel[k].clear();updateMsLbl(k);applyFilters();}
-function updateMsLbl(k){const el=document.getElementById('ms-'+k+'-label');const def={dia:'Todos los días',estado:'Todos los estados',mes:'Todos los meses',ano:'Todos los años',aprobacion:'Todas',proveedor:'Todos los proveedores',antiguedad:'Todas'};const c=sel[k].size;if(!c){el.textContent=def[k];el.classList.remove('has-sel');return;}if(k==='dia')el.textContent=c===1?'Día '+[...sel[k]][0]:c+' días';else if(k==='estado')el.textContent=c===1?ESTADO_LBL[[...sel[k]][0]]:c+' estados';else if(k==='mes')el.textContent=c===1?MESES[+[...sel[k]][0]]:c+' meses';else if(k==='aprobacion')el.textContent=c===1?([...sel[k]][0]==='aprobada'?'Aprobadas':'Sin aprobar'):'Todas';else if(k==='proveedor')el.textContent=c===1?[...sel[k]][0]:c+' proveedores';else if(k==='antiguedad'){const lbl={'0-30':'≤ 30 días','31-60':'31–60 días','60+':'> 60 días'};el.textContent=c===1?lbl[[...sel[k]][0]]:c+' rangos';}else el.textContent=c===1?[...sel[k]][0]:c+' años';el.classList.add('has-sel');}
-function clearAllFilters(){['dia','estado','mes','ano','aprobacion','proveedor','antiguedad'].forEach(k=>msClearAll(k));}
-function renderChips(){const row=document.getElementById('chips-row');const chips=[];[...sel.dia].sort((a,b)=>+a-+b).forEach(v=>chips.push(`<span class="chip">Día ${v}<button onclick="removeChip('dia','${v}')">✕</button></span>`));sel.estado.forEach(v=>chips.push(`<span class="chip">${ESTADO_LBL[v]}<button onclick="removeChip('estado','${v}')">✕</button></span>`));[...sel.mes].sort((a,b)=>+a-+b).forEach(v=>chips.push(`<span class="chip">${MESES[+v]}<button onclick="removeChip('mes','${v}')">✕</button></span>`));[...sel.ano].sort().forEach(v=>chips.push(`<span class="chip">${v}<button onclick="removeChip('ano','${v}')">✕</button></span>`));sel.aprobacion.forEach(v=>chips.push(`<span class="chip">${v==='aprobada'?'Aprobada':'Sin aprobar'}<button onclick="removeChip('aprobacion','${v}')">✕</button></span>`));sel.proveedor.forEach(v=>chips.push(`<span class="chip">${v}<button onclick="removeChip('proveedor',${JSON.stringify(v)})">✕</button></span>`));{const lbl={'0-30':'≤ 30 días','31-60':'31–60 días','60+':'> 60 días'};sel.antiguedad.forEach(v=>chips.push(`<span class="chip">${lbl[v]}<button onclick="removeChip('antiguedad','${v}')">✕</button></span>`));}row.style.display=chips.length?'flex':'none';row.innerHTML=chips.join('');}
+function updateMsLbl(k){const el=document.getElementById('ms-'+k+'-label');const def={estado:'Todos los estados',aprobacion:'Todas',proveedor:'Todos los proveedores',antiguedad:'Todas'};const c=sel[k].size;if(!c){el.textContent=def[k];el.classList.remove('has-sel');return;}if(k==='dia')el.textContent=c===1?'Día '+[...sel[k]][0]:c+' días';else if(k==='estado')el.textContent=c===1?ESTADO_LBL[[...sel[k]][0]]:c+' estados';else if(k==='mes')el.textContent=c===1?MESES[+[...sel[k]][0]]:c+' meses';else if(k==='aprobacion')el.textContent=c===1?([...sel[k]][0]==='aprobada'?'Aprobadas':'Sin aprobar'):'Todas';else if(k==='proveedor')el.textContent=c===1?[...sel[k]][0]:c+' proveedores';else if(k==='antiguedad'){const lbl={'0-30':'≤ 30 días','31-60':'31–60 días','60+':'> 60 días'};el.textContent=c===1?lbl[[...sel[k]][0]]:c+' rangos';}else el.textContent=c===1?[...sel[k]][0]:c+' años';el.classList.add('has-sel');}
+function clearAllFilters(){['estado','aprobacion','proveedor','antiguedad'].forEach(k=>msClearAll(k));document.getElementById('filter-fecha-desde').value='';document.getElementById('filter-fecha-hasta').value='';applyFilters();}
+function fmtDateChip(d){if(!d)return'';const[y,m,day]=d.split('-');return`${day}/${m}/${y}`;}
+function renderChips(){const row=document.getElementById('chips-row');const chips=[];
+  const fd=document.getElementById('filter-fecha-desde').value;
+  const fh=document.getElementById('filter-fecha-hasta').value;
+  if(fd)chips.push(`<span class="chip">Desde ${fmtDateChip(fd)}<button onclick="document.getElementById('filter-fecha-desde').value='';applyFilters()">✕</button></span>`);
+  if(fh)chips.push(`<span class="chip">Hasta ${fmtDateChip(fh)}<button onclick="document.getElementById('filter-fecha-hasta').value='';applyFilters()">✕</button></span>`);
+  sel.estado.forEach(v=>chips.push(`<span class="chip">${ESTADO_LBL[v]}<button onclick="removeChip('estado','${v}')">✕</button></span>`));
+  sel.aprobacion.forEach(v=>chips.push(`<span class="chip">${v==='aprobada'?'Aprobada':'Sin aprobar'}<button onclick="removeChip('aprobacion','${v}')">✕</button></span>`));
+  sel.proveedor.forEach(v=>chips.push(`<span class="chip">${v}<button onclick="removeChip('proveedor',${JSON.stringify(v)})">✕</button></span>`));
+  {const lbl={'0-30':'≤ 30 días','31-60':'31–60 días','60+':'> 60 días'};sel.antiguedad.forEach(v=>chips.push(`<span class="chip">${lbl[v]}<button onclick="removeChip('antiguedad','${v}')">✕</button></span>`));}
+  row.style.display=chips.length?'flex':'none';row.innerHTML=chips.join('');}
 function buildDiaDropdown(){const dd=document.getElementById('ms-dia-dd');const dias=[...new Set(all.map(f=>getDia(f.fecha_emision)).filter(Boolean))].sort((a,b)=>+a-+b);const ac=document.createElement('div');ac.className='ms-actions';ac.innerHTML='<span onclick="msSelectAll(\'dia\')">Seleccionar todos</span><span onclick="msClearAll(\'dia\')">Limpiar</span>';dd.innerHTML='';dd.appendChild(ac);dias.forEach(d=>{const lbl=document.createElement('label');lbl.className='ms-option';const cb=document.createElement('input');cb.type='checkbox';cb.value=d;cb.onchange=()=>msChange('dia');if(sel.dia.has(d))cb.checked=true;lbl.appendChild(cb);lbl.appendChild(document.createTextNode(' '+d));dd.appendChild(lbl);});}
 function buildProveedorDropdown(){const dd=document.getElementById('ms-proveedor-dd');const proveedores=[...new Set(all.map(f=>f.proveedor||'').filter(Boolean))].sort();const actions=dd.querySelector('.ms-actions');dd.innerHTML='';const ac=document.createElement('div');ac.className='ms-actions';ac.innerHTML='<span onclick="msSelectAll(\'proveedor\')">Seleccionar todos</span><span onclick="msClearAll(\'proveedor\')">Limpiar</span>';dd.appendChild(ac);proveedores.forEach(p=>{const lbl=document.createElement('label');lbl.className='ms-option';const cb=document.createElement('input');cb.type='checkbox';cb.value=p;cb.onchange=()=>msChange('proveedor');if(sel.proveedor.has(p))cb.checked=true;lbl.appendChild(cb);lbl.appendChild(document.createTextNode(' '+p));dd.appendChild(lbl);});}
 function removeChip(k,v){sel[k].delete(v);const cb=document.querySelector(`#ms-${k}-dd input[value="${CSS.escape(v)}"]`);if(cb)cb.checked=false;updateMsLbl(k);applyFilters();}
